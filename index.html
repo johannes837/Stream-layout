@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Stream Layout</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&display=swap');
+
+  @property --a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+
+  :root {
+    --h: 280;
+    --c1: hsl(var(--h) 100% 62%);
+    --c2: hsl(calc(var(--h) + 70) 100% 60%);
+    --c3: hsl(calc(var(--h) + 140) 100% 62%);
+    --card: rgba(10, 8, 22, .86);
+  }
+
+  html, body { margin: 0; width: 1920px; height: 1080px; background: transparent; overflow: hidden; }
+  * { box-sizing: border-box; }
+
+  /* ---------- rotating gradient frames (game + cam), see-through inside ---------- */
+  .frame {
+    position: absolute; border-radius: 20px; overflow: hidden; z-index: 1;
+    box-shadow: 0 0 30px color-mix(in srgb, var(--c1) 50%, transparent),
+                0 0 60px color-mix(in srgb, var(--c2) 28%, transparent);
+  }
+  .frame::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 4px;
+    background: conic-gradient(from var(--a), var(--c1), var(--c2), var(--c3), var(--c1));
+    animation: spin 7s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+            mask-composite: exclude;
+  }
+  @keyframes spin { to { --a: 360deg; } }
+
+  #game { left: 22px;   top: 22px; width: 1536px; height: 864px; }
+  #cam  { left: 1584px; top: 30px; width: 312px;  height: 312px; }
+
+  /* little corner brackets on the game frame */
+  .corner { position: absolute; width: 34px; height: 34px; border: 3px solid #fff;
+            filter: drop-shadow(0 0 6px var(--c2)); }
+  .corner.tl { top: 14px; left: 14px;  border-right: 0; border-bottom: 0; border-top-left-radius: 10px; }
+  .corner.tr { top: 14px; right: 14px; border-left: 0;  border-bottom: 0; border-top-right-radius: 10px; }
+  .corner.bl { bottom: 14px; left: 14px;  border-right: 0; border-top: 0; border-bottom-left-radius: 10px; }
+  .corner.br { bottom: 14px; right: 14px; border-left: 0;  border-top: 0; border-bottom-right-radius: 10px; }
+
+  /* ---------- cards ---------- */
+  .card {
+    position: absolute; border-radius: 22px; overflow: hidden;
+    background:
+      radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--c1) 22%, transparent), transparent 55%),
+      radial-gradient(120% 140% at 100% 100%, color-mix(in srgb, var(--c3) 20%, transparent), transparent 55%),
+      var(--card);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--c2) 45%, transparent),
+                0 0 30px color-mix(in srgb, var(--c1) 30%, transparent);
+  }
+  .card::after { /* light sweep */
+    content: ""; position: absolute; top: 0; bottom: 0; width: 70px; left: -120px;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.12), transparent);
+    transform: skewX(-18deg); animation: sweep 6s ease-in-out infinite;
+  }
+  @keyframes sweep { 0%, 60% { left: -120px; } 100% { left: 115%; } }
+
+  .label {
+    font: 700 16px/1 'Rajdhani', sans-serif; letter-spacing: .45em; text-transform: uppercase;
+    color: var(--c2); text-shadow: 0 0 20px var(--c2); padding-left: .45em;
+  }
+  .glow {
+    font-family: 'Orbitron', monospace; font-weight: 900; color: #fff; font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 6px #fff, 0 0 18px var(--c1), 0 0 38px var(--c1), 0 0 64px var(--c2);
+  }
+
+  /* ---------- clock card ---------- */
+  #clock { left: 1584px; top: 360px; width: 312px; height: 252px; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 10px; }
+  #clock.tall { height: 528px; gap: 18px; }   /* fills the column when the Time Live card is hidden */
+  #time { font-size: 56px; line-height: 1; }
+  #time .colon { color: var(--c2); animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: .15; } }
+  #date { font: 600 20px/1 'Rajdhani', sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.8); padding-left: .26em; }
+  #bar { width: 240px; height: 6px; border-radius: 6px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 4px; }
+  #fill { height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3)); box-shadow: 0 0 12px var(--c2); }
+
+  /* ---------- uptime ring card ---------- */
+  #uptime { left: 1584px; top: 636px; width: 312px; height: 252px; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 10px; }
+  #ringwrap { position: relative; width: 176px; height: 176px; }
+  #ringwrap svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  #uptxt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 25px; }
+  #ring { filter: drop-shadow(0 0 6px var(--c2)); }
+
+  /* ---------- bottom title strip ---------- */
+  #strip { left: 30px; top: 912px; width: 1872px; height: 144px; display: flex; align-items: center; padding: 0 40px; gap: 32px; }
+  #live { display: flex; align-items: center; gap: 12px; padding: 12px 22px; border-radius: 40px;
+          background: color-mix(in srgb, var(--c1) 22%, transparent);
+          border: 2px solid var(--c1); font: 700 22px/1 'Rajdhani', sans-serif; letter-spacing: .3em; color: #fff; }
+  #live i { width: 14px; height: 14px; border-radius: 50%; background: #ff3b5c; box-shadow: 0 0 14px #ff3b5c; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 50% { transform: scale(.55); opacity: .5; } }
+  #titles { flex: 1; min-width: 0; }
+  #title { font: 900 52px/1.1 'Orbitron', monospace; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+           text-shadow: 0 0 12px var(--c1), 0 0 34px var(--c1); }
+  #game-name { margin-top: 10px; font: 700 26px/1 'Rajdhani', sans-serif; letter-spacing: .4em; text-transform: uppercase; color: var(--c3);
+               text-shadow: 0 0 10px var(--c3); }
+  #eq { display: flex; align-items: flex-end; gap: 6px; height: 80px; }
+  #eq b { width: 10px; border-radius: 5px; background: linear-gradient(to top, var(--c1), var(--c2), var(--c3));
+          box-shadow: 0 0 10px color-mix(in srgb, var(--c2) 70%, transparent);
+          height: 20%; animation: eq 1s ease-in-out infinite alternate; }
+  @keyframes eq { to { height: 100%; } }
+
+  /* ---------- status tab (hidden until you turn it on) ---------- */
+  #status {
+    display: none;                       /* turn on from OBS CSS: #status { display: flex !important; } */
+    position: absolute; left: 792px; top: 2px; transform: translateX(-50%);
+    z-index: 10; align-items: center; gap: 14px; padding: 12px 34px; border-radius: 40px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--c1) 30%, transparent), color-mix(in srgb, var(--c3) 25%, transparent)),
+      var(--card);
+    box-shadow: 0 0 0 2px var(--c2), 0 0 26px color-mix(in srgb, var(--c1) 60%, transparent);
+    font: 700 28px/1 'Orbitron', monospace; letter-spacing: .22em; text-transform: uppercase; color: #fff;
+    text-shadow: 0 0 10px var(--c1), 0 0 24px var(--c2);
+    white-space: nowrap; padding-left: calc(34px + .22em);
+    animation: statusIn .5s cubic-bezier(.2,1.5,.4,1), statusFloat 3s ease-in-out .5s infinite;
+  }
+  #status::before {
+    content: ""; width: 14px; height: 14px; border-radius: 50%; flex: none;
+    background: var(--c3); box-shadow: 0 0 14px var(--c3); animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes statusIn { from { opacity: 0; transform: translate(-50%, -30px) scale(.7); } }
+  @keyframes statusFloat { 50% { transform: translate(-50%, 4px); } }
+</style>
+</head>
+
+<body translate="no">
+
+  <!-- solid black backdrop with see-through holes for the game + cam, so nothing behind can clip through -->
+  <svg id="bg" width="1920" height="1080" viewBox="0 0 1920 1080" style="position:absolute;left:0;top:0">
+    <path fill="#000" fill-rule="evenodd" d="
+      M0 0 H1920 V1080 H0 Z
+      M46 24 H1538 A22 30 0 0 1 1560 46 V866 A22 22 0 0 1 1538 888 H46 A22 30 0 0 1 24 866 V46 A22 30 0 0 1 46 24 Z
+      M1606 24 H1874 A22 30 0 0 1 1896 46 V314 A22 22 0 0 1 1874 336 H1606 A22 30 0 0 1 1584 314 V46 A22 30 0 0 1 1606 24 Z"/>
+  </svg>
+
+  <!-- see-through windows: put your Game Capture inside #game and your webcam inside #cam -->
+  <div class="frame" id="game">
+    <div class="corner tl"></div><div class="corner tr"></div>
+    <div class="corner bl"></div><div class="corner br"></div>
+  </div>
+  <div class="frame" id="cam"></div>
+
+  <!-- status tab: off by default, see the notes in the script below -->
+  <div id="status"></div>
+
+  <div class="card" id="clock">
+    <div class="label" id="day"></div>
+    <div class="glow" id="time"></div>
+    <div id="date"></div>
+    <div id="bar"><div id="fill"></div></div>
+  </div>
+
+  <div class="card" id="uptime">
+    <div class="label">Time Live</div>
+    <div id="ringwrap">
+      <svg width="176" height="176" viewBox="0 0 176 176">
+        <circle cx="88" cy="88" r="78" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="8"/>
+        <circle id="ring" cx="88" cy="88" r="78" fill="none" stroke="url(#g)" stroke-width="8" stroke-linecap="round"
+                stroke-dasharray="490.1" stroke-dashoffset="490.1"/>
+        <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="hsl(var(--h) 100% 62%)"/><stop offset="1" stop-color="hsl(calc(var(--h) + 140) 100% 62%)"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="glow" id="uptxt">00:00:00</div>
+    </div>
+  </div>
+
+  <div class="card" id="strip">
+    <div id="live"><i></i>LIVE</div>
+    <div id="titles">
+      <div id="title">Stream Title Here</div>
+      <div id="game-name">Game Name</div>
+    </div>
+    <div id="eq"></div>
+  </div>
+
+<script>
+/*
+  Use as a 1920x1080 Browser Source in OBS (Local file), layered ABOVE your game + cam sources.
+  Options, add to the URL:
+    ?title=My+Stream+Title      big text at the bottom
+    ?game=Roblox                small text under it
+    ?hue=190                    color theme (280 purple, 190 cyan, 340 pink, 120 green)
+    ?bg=0                       turn the black background off (see-through again)
+    ?status=BRB                 status tab at the top (no ?status, or ?status=0, keeps it hidden)
+    ?uptime=0                   hide the "Time Live" counter (leave it off to show it)
+    ?reset=1                    restart the "time live" counter (load once, then remove it)
+
+  Status from OBS Custom CSS instead of the URL:
+    #status { display: flex !important; }
+    #status::after { content: "BRB"; }
+
+  Hide the Time Live counter from OBS Custom CSS:
+    #uptime { display: none !important; }
+    #clock { height: 528px !important; }
+*/
+var q = {};
+location.search.substring(1).split('&').forEach(function (p) {
+  if (!p) return;
+  var kv = p.split('=');
+  q[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' '));
+});
+if (q.hue) document.documentElement.style.setProperty('--h', q.hue);
+if (q.title) document.getElementById('title').textContent = q.title;
+if (q.game)  document.getElementById('game-name').textContent = q.game;
+if (q.bg === '0') document.getElementById('bg').style.display = 'none';
+// status tab: ?status=BRB shows it, ?status=0 (or no status) keeps it hidden
+if (q.status && q.status !== '0' && q.status !== 'off') {
+  var st = document.getElementById('status');
+  st.textContent = q.status;
+  st.style.display = 'flex';
+}
+// "Time Live" counter: ?uptime=0 hides it and the clock card grows to fill the space
+if (q.uptime === '0' || q.uptime === 'off') {
+  document.getElementById('uptime').style.display = 'none';
+  document.getElementById('clock').classList.add('tall');
+}
+
+// equalizer bars (decorative)
+var eq = document.getElementById('eq');
+for (var i = 0; i < 22; i++) {
+  var b = document.createElement('b');
+  b.style.animationDuration = (0.5 + Math.random() * 0.9).toFixed(2) + 's';
+  b.style.animationDelay = (-Math.random()).toFixed(2) + 's';
+  eq.appendChild(b);
+}
+
+// stream start time, survives scene switches
+var start;
+try {
+  if (q.reset === '1' || !localStorage.getItem('streamStart')) localStorage.setItem('streamStart', Date.now());
+  start = +localStorage.getItem('streamStart');
+} catch (e) { start = Date.now(); }
+
+var DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+var MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+var pad = function (n) { return String(n).padStart(2, '0'); };
+var C = 2 * Math.PI * 78;
+
+function frame() {
+  var d = new Date();
+  document.getElementById('day').textContent = DAYS[d.getDay()];
+  document.getElementById('time').innerHTML = pad(d.getHours()) + '<span class="colon">:</span>' + pad(d.getMinutes());
+  document.getElementById('date').textContent = pad(d.getDate()) + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  var secs = d.getSeconds() + d.getMilliseconds() / 1000;
+  document.getElementById('fill').style.width = (secs / 60 * 100) + '%';
+
+  var t = Math.max(0, Math.floor((Date.now() - start) / 1000));
+  document.getElementById('uptxt').textContent = pad(Math.floor(t / 3600)) + ':' + pad(Math.floor(t / 60) % 60) + ':' + pad(t % 60);
+  document.getElementById('ring').setAttribute('stroke-dashoffset', C * (1 - (t % 60) / 60 - 0));
+
+  requestAnimationFrame(frame);
+}
+frame();
+</script>
+</body>
+</html>
